@@ -1,15 +1,18 @@
 use crossterm::event::*;
 use crossterm::terminal::ClearType;
 use crossterm::{cursor, event, execute, terminal};
-use std::io::stdout;
+use std::io::{stdout, Write};
 use std::time::Duration;
 
 struct CleanUp;
 struct Reader;
-struct Output;
 struct Editor {
     reader: Reader,
     output: Output,
+}
+
+struct Output {
+    win_size: (usize, usize),
 }
 
 impl Drop for CleanUp {
@@ -58,7 +61,10 @@ impl Editor {
 
 impl Output {
     fn new() -> Self {
-        Self
+        let win_size = terminal::size()
+            .map(|(x, y)| (x as usize, y as usize))
+            .unwrap();
+        Self { win_size }
     }
 
     fn clear_screen() -> crossterm::Result<()> {
@@ -67,8 +73,13 @@ impl Output {
     }
 
     fn draw_rows(&self) {
-        for _ in 0..24 {
-            println!("~\r");
+        let screen_rows = self.win_size.1;
+        for i in 0..screen_rows {
+            print!("~");
+            if i < screen_rows - 1 {
+                println!("\r")
+            }
+            stdout().flush();
         }
     }
 
