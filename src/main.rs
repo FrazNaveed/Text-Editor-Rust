@@ -70,9 +70,19 @@ impl Output {
     }
 
     fn draw_rows(&mut self) {
+        let VERSION = "1.0";
         let screen_rows = self.win_size.1;
+        let screen_columns = self.win_size.0;
         for i in 0..screen_rows {
-            self.editor_contents.push('~');
+            if i == screen_rows / 3 {
+                let mut welcome = format!("Pound Editor --- Version {}", VERSION);
+                if welcome.len() > screen_columns {
+                    welcome.truncate(screen_columns)
+                }
+                self.editor_contents.push_str(&welcome);
+            } else {
+                self.editor_contents.push('~');
+            }
             queue!(
                 self.editor_contents,
                 terminal::Clear(ClearType::UntilNewLine)
