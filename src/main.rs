@@ -20,6 +20,20 @@ struct EditorContents {
     content: String,
 }
 
+struct CursorController {
+    cursor_x: usize,
+    cursor_y: usize,
+}
+
+impl CursorController {
+    fn new() -> CursorController {
+        Self {
+            cursor_x: 0,
+            cursor_y: 0,
+        }
+    }
+}
+
 impl Drop for CleanUp {
     fn drop(&mut self) {
         terminal::disable_raw_mode().expect("Unable to disable raw mode");
@@ -36,31 +50,6 @@ impl Reader {
                 }
             }
         }
-    }
-}
-
-impl Editor {
-    fn new() -> Self {
-        Self {
-            reader: Reader,
-            output: Output::new(),
-        }
-    }
-
-    fn process_keypress(&self) -> crossterm::Result<bool> {
-        match self.reader.read_key()? {
-            KeyEvent {
-                code: KeyCode::Char('q'),
-                modifiers: event::KeyModifiers::CONTROL,
-            } => return Ok(false),
-            _ => {}
-        }
-        Ok(true)
-    }
-
-    fn run(&mut self) -> crossterm::Result<bool> {
-        self.output.refresh_screen()?;
-        self.process_keypress()
     }
 }
 
@@ -93,17 +82,38 @@ impl Output {
     fn refresh_screen(&mut self) -> crossterm::Result<()> {
         queue!(
             self.editor_contents,
-            cursor::Hide, //add this
+            cursor::Hide,
             terminal::Clear(ClearType::All),
             cursor::MoveTo(0, 0)
         )?;
         self.draw_rows();
-        queue!(
-            self.editor_contents,
-            cursor::MoveTo(0, 0),
-            /* add this */ cursor::Show
-        )?;
+        queue!(self.editor_contents, cursor::MoveTo(0, 0), cursor::Show)?;
         self.editor_contents.flush()
+    }
+}
+
+impl Editor {
+    fn new() -> Self {
+        Self {
+            reader: Reader,
+            output: Output::new(),
+        }
+    }
+
+    fn process_keypress(&self) -> crossterm::Result<bool> {
+        match self.reader.read_key()? {
+            KeyEvent {
+                code: KeyCode::Char('q'),
+                modifiers: event::KeyModifiers::CONTROL,
+            } => return Ok(false),
+            _ => {}
+        }
+        Ok(true)
+    }
+
+    fn run(&mut self) -> crossterm::Result<bool> {
+        self.output.refresh_screen()?;
+        self.process_keypress()
     }
 }
 
