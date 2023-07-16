@@ -79,6 +79,12 @@ impl Output {
                 if welcome.len() > screen_columns {
                     welcome.truncate(screen_columns)
                 }
+                let mut padding = (screen_columns - welcome.len()) / 2;
+                if padding != 0 {
+                    self.editor_contents.push('~');
+                    padding -= 1
+                }
+                (0..padding).for_each(|_| self.editor_contents.push(' '));
                 self.editor_contents.push_str(&welcome);
             } else {
                 self.editor_contents.push('~');
