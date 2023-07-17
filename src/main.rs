@@ -14,6 +14,7 @@ struct Editor {
 struct Output {
     win_size: (usize, usize),
     editor_contents: EditorContents,
+    cursor_controller: CursorController,
 }
 
 struct EditorContents {
@@ -61,6 +62,7 @@ impl Output {
         Self {
             win_size,
             editor_contents: EditorContents::new(),
+            cursor_controller: CursorController::new(),
         }
     }
 
@@ -103,10 +105,19 @@ impl Output {
     fn refresh_screen(&mut self) -> crossterm::Result<()> {
         queue!(self.editor_contents, cursor::Hide, cursor::MoveTo(0, 0))?;
         self.draw_rows();
-        queue!(self.editor_contents, cursor::MoveTo(0, 0), cursor::Show)?;
+
+        let cursor_x = self.cursor_controller.cursor_x;
+        let cursor_y = self.cursor_controller.cursor_y;
+        queue!(
+            self.editor_contents,
+            cursor::MoveTo(cursor_x as u16, cursor_y as u16),
+            cursor::Show
+        )?;
+
         self.editor_contents.flush()
     }
 }
+
 impl Editor {
     fn new() -> Self {
         Self {
