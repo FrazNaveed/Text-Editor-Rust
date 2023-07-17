@@ -11,9 +11,11 @@ use crossterm::terminal::ClearType;
 use crossterm::{cursor, event, execute, queue, style, terminal};
 // used for comparing values & determining their order, less than, greater than
 use std::cmp::Ordering;
-
+// ErrorKind: represents differnt types of I/O errors
 use std::io::{stdout, ErrorKind, Write};
+// for file navigation
 use std::path::PathBuf;
+// for using time in the editor
 use std::time::{Duration, Instant};
 use std::{cmp, env, fs, io};
 
@@ -27,7 +29,10 @@ struct CleanUp;
 
 impl Drop for CleanUp {
     fn drop(&mut self) {
+        // disables the raw mode in the terminal.
+        // with raw mode we can read input events from the terminal
         terminal::disable_raw_mode().expect("Unable to disable raw mode");
+        // Clearing the screen
         Output::clear_screen().expect("error");
     }
 }
@@ -99,7 +104,7 @@ enum HighlightType {
     String,
     CharLiteral,
     Comment,
-    MultilineComment, // add line
+    MultilineComment,
     Other(Color),
 }
 
@@ -107,7 +112,7 @@ trait SyntaxHighlight {
     fn extensions(&self) -> &[&str];
     fn file_type(&self) -> &str;
     fn comment_start(&self) -> &str;
-    fn multiline_comment(&self) -> Option<(&str, &str)>; // add line
+    fn multiline_comment(&self) -> Option<(&str, &str)>;
     fn syntax_color(&self, highlight_type: &HighlightType) -> Color;
     fn update_syntax(&self, at: usize, editor_rows: &mut Vec<Row>);
     fn color_row(&self, render: &str, highlight: &[HighlightType], out: &mut EditorContents) {
@@ -213,7 +218,7 @@ macro_rules! syntax_struct {
             }
 
             fn update_syntax(&self, at: usize, editor_rows: &mut Vec<Row>) {
-                let mut in_comment = at > 0 && editor_rows[at - 1].is_comment; // add line
+                let mut in_comment = at > 0 && editor_rows[at - 1].is_comment;
                 let current_row = &mut editor_rows[at];
                 macro_rules! add {
                     ($h:expr) => {
@@ -233,7 +238,7 @@ macro_rules! syntax_struct {
                     } else {
                         HighlightType::Normal
                     };
-                    if in_string.is_none() && !comment_start.is_empty() && !in_comment { // modify
+                    if in_string.is_none() && !comment_start.is_empty() && !in_comment {
                         let end = i + comment_start.len();
                         if render[i..cmp::min(end, render.len())] == *comment_start {
                             (i..render.len()).for_each(|_| add!(HighlightType::Comment));
